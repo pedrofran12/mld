@@ -1,4 +1,5 @@
 import logging
+from threading import Lock
 from threading import Timer
 
 from mld.utils import TYPE_CHECKING
@@ -35,6 +36,10 @@ class RouterState(object):
         # Key: GroupIPAddress, Value: GroupState object
         self.group_state = {}
         self.group_state_lock = RWLockWrite()
+
+        # instances to notify membership timeout and report or done packet reception
+        self.to_notify_list = []
+        self.to_notify_list_lock = Lock()
 
         # send general query
         packet = PacketMLDHeader(type=mld_globals.MULTICAST_LISTENER_QUERY_TYPE,
@@ -139,6 +144,7 @@ class RouterState(object):
         """
         mld_group = packet.payload.group_address
         self.get_group_state(mld_group).receive_report()
+        self.notify_report(packet)
 
     def receive_done(self, packet: ReceivedPacket):
         """
@@ -146,6 +152,7 @@ class RouterState(object):
         """
         mld_group = packet.payload.group_address
         self.get_group_state(mld_group).receive_done()
+        self.notify_done(packet)
 
     def receive_query(self, packet: ReceivedPacket):
         """
@@ -163,8 +170,51 @@ class RouterState(object):
         """
         Remove this MLD interface
         Clear all state
+        Notify all interested entries that this interface is no longer managed
         """
         for group in self.group_state.values():
             group.remove()
         self.clear_general_query_timer()
         self.clear_other_querier_present_timer()
+        for to_notify in self.to_notify_list:
+            to_notify.notify_removal()
+        del self.to_notify_list[:]
+
+    ###########################################
+    # Notify Membership packets and Membership timeouts
+    ###########################################
+    def notify_done(self, packet: ReceivedPacket):
+        """
+        Notify all entries interested in this router
+        """
+        for to_notify in self.to_notify_list:
+            to_notify.notify_done(packet=packet)
+
+    def notify_report(self, packet: ReceivedPacket):
+        """
+        Notify all entries interested in this router
+        """
+        for to_notify in self.to_notify_list:
+            to_notify.notify_report(packet=packet)
+
+    def notify_timeout(self, group_ip):
+        """
+        Notify all entries interested in this router
+        """
+        for to_notify in self.to_notify_list:
+            to_notify.notify_timeout(group_ip)
+
+    def add_to_notify_entry(self, to_notify_entry):
+        """
+        A new entry monitoring membership informations
+        """
+        with self.to_notify_list_lock:
+            self.to_notify_list.append(to_notify_entry)
+
+    def remove_to_notify_entry(self, to_notify_entry):
+        """
+        A entry is no longer monitoring membership informations
+        Remove this entry from this object
+        """
+        with self.to_notify_list_lock:
+            self.to_notify_list.remove(to_notify_entry)
