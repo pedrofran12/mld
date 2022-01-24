@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 
 class RouterState(object):
-    ROUTER_STATE_LOGGER = logging.getLogger('mld.mldv1s.RouterState')
+    ROUTER_STATE_LOGGER = logging.getLogger('mld.mldv1.RouterState')
 
     def __init__(self, interface: 'InterfaceMLD'):
         #logger
