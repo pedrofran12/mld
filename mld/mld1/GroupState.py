@@ -1,6 +1,7 @@
 import logging
 from threading import Lock
 from threading import Timer
+from ipaddress import IPv6Address
 
 from mld.utils import TYPE_CHECKING
 from .wrapper import NoListenersPresent
@@ -21,10 +22,15 @@ class GroupState(object):
 
         #timers and state
         self.router_state = router_state
-        self.group_ip = group_ip
         self.state = NoListenersPresent
         self.timer = None
         self.retransmit_timer = None
+
+        ip_addr = IPv6Address(group_ip)
+        if not ip_addr.is_multicast:
+            raise ValueError(group_ip + " is not a multicast address")
+        self.group_ip = group_ip
+
         # lock
         self.lock = Lock()
 
