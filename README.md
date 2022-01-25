@@ -35,7 +35,7 @@ intf = InterfaceMLD(interface_name="eth0")
 intf.enable()  # start receiving MLD packets
 
 # get information from a given multicast group
-multicast_group_obj = intf.interface_state.get_group_state(group_ip="ff05:10:11:12")
+multicast_group_obj = intf.interface_state.get_group_state(group_ip="ff05::10:11:12")
 
 interest = multicast_group_obj.has_members()  # boolean that informs if there is
                                               # multicast interest in this group
