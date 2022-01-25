@@ -13,7 +13,7 @@ setup(
     long_description=open("README.md", "r").read(),
     long_description_content_type="text/markdown",
     keywords="MLD MLDv1 Router IPv6 Multicast Interest",
-    version="1.0.1",
+    version="1.0.2",
     url="http://github.com/pedrofran12/mld",
     author="Pedro Oliveira",
     author_email="pedro.francisco.oliveira@tecnico.ulisboa.pt",
