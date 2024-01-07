@@ -109,7 +109,15 @@ class InterfaceMLD(Interface):
         cmsg_level = socket.IPPROTO_IPV6
         cmsg_type = socket.IPV6_HOPOPTS
         cmsg_data = b'\x3a\x00\x05\x02\x00\x00\x01\x00'
-        self._send_socket.sendmsg([data], [(cmsg_level, cmsg_type, cmsg_data)], 0, (address, 0))
+        try:
+            self._send_socket.sendmsg([data], [(cmsg_level, cmsg_type, cmsg_data)], 0, (address, 0))
+        except OSError as e:
+            if e.errno == 101:
+              raise OSError(
+                  'No existing route to address %s for interface %s'
+                  % (address, self.interface_name)
+              ) from e
+            raise e
 
     def _receive(self, raw_bytes, ancdata, src_addr):
         if raw_bytes:
