@@ -18,6 +18,7 @@ class GroupState(object):
         #logger
         extra_dict_logger = router_state.router_state_logger.extra.copy()
         extra_dict_logger['tree'] = '(*,' + group_ip + ')'
+        extra_dict_logger['routername'] = None
         self.group_state_logger = logging.LoggerAdapter(GroupState.LOGGER, extra_dict_logger)
 
         #timers and state
@@ -149,7 +150,7 @@ class GroupState(object):
         Notify all tree entries that MLD considers to have hosts interested in this group
         """
         with self.multicast_interface_state_lock:
-            print("notify+", self.multicast_interface_state)
+            logging.debug("notify+ %s", self.multicast_interface_state)
             for interface_state in self.multicast_interface_state:
                 interface_state.notify_membership(has_members=True)
 
@@ -158,7 +159,7 @@ class GroupState(object):
         Notify all tree entries that MLD considers to have not hosts interested in this group
         """
         with self.multicast_interface_state_lock:
-            print("notify-", self.multicast_interface_state)
+            logging.debug("notify- %s", self.multicast_interface_state)
             for interface_state in self.multicast_interface_state:
                 interface_state.notify_membership(has_members=False)
 

@@ -2,6 +2,7 @@ import socket
 import struct
 import netifaces
 import ipaddress
+import logging
 from socket import if_nametoindex
 from ipaddress import IPv6Address
 from .Interface import Interface
@@ -123,10 +124,10 @@ class InterfaceMLD(Interface):
         if raw_bytes:
             raw_bytes = raw_bytes[14:]
             src_addr = (socket.inet_ntop(socket.AF_INET6, raw_bytes[8:24]),)
-            print("MLD IP_SRC bf= ", src_addr)
+            logging.debug("MLD IP_SRC bf= %s", src_addr)
             dst_addr = raw_bytes[24:40]
             (next_header,) = struct.unpack("B", raw_bytes[6:7])
-            print("NEXT HEADER:", next_header)
+            logging.debug("NEXT HEADER:%s", next_header)
             payload_starts_at_len = 40
             if next_header == 0:
                 # Hop by Hop options
@@ -141,11 +142,11 @@ class InterfaceMLD(Interface):
 
             raw_bytes = raw_bytes[payload_starts_at_len:]
             ancdata = [(socket.IPPROTO_IPV6, socket.IPV6_PKTINFO, dst_addr)]
-            print("RECEIVE MLD")
-            print("ANCDATA: ", ancdata, "; SRC_ADDR: ", src_addr)
+            logging.debug("RECEIVE MLD")
+            logging.debug("ANCDATA: %s ; SRC_ADDR: %s", ancdata, src_addr)
             packet = ReceivedPacket(raw_bytes, ancdata, src_addr, 58, self)
             ip_src = packet.ip_header.ip_src
-            print("MLD IP_SRC = ", ip_src)
+            logging.debug("MLD IP_SRC = %s", ip_src)
             if not (ip_src == "::" or IPv6Address(ip_src).is_multicast):
                 self.PKT_FUNCTIONS.get(packet.payload.get_mld_type(), InterfaceMLD.receive_unknown_type)(self, packet)
     """
@@ -158,7 +159,7 @@ class InterfaceMLD(Interface):
     # Recv packets
     ###########################################
     def receive_multicast_listener_report(self, packet):
-        print("RECEIVE MULTICAST LISTENER REPORT")
+        logging.debug("RECEIVE MULTICAST LISTENER REPORT")
         ip_dst = packet.ip_header.ip_dst
         mld_group = packet.payload.group_address
         ipv6_group = IPv6Address(mld_group)
@@ -167,14 +168,14 @@ class InterfaceMLD(Interface):
             self.interface_state.receive_report(packet)
 
     def receive_multicast_listener_done(self, packet):
-        print("RECEIVE MULTICAST LISTENER DONE")
+        logging.debug("RECEIVE MULTICAST LISTENER DONE")
         ip_dst = packet.ip_header.ip_dst
         mld_group = packet.payload.group_address
         if IPv6Address(ip_dst) == self.IPv6_LINK_SCOPE_ALL_ROUTERS and IPv6Address(mld_group).is_multicast:
             self.interface_state.receive_done(packet)
 
     def receive_multicast_listener_query(self, packet):
-        print("RECEIVE MULTICAST LISTENER QUERY")
+        logging.debug("RECEIVE MULTICAST LISTENER QUERY")
         ip_dst = packet.ip_header.ip_dst
         mld_group = packet.payload.group_address
         ipv6_group = IPv6Address(mld_group)
