@@ -110,6 +110,7 @@ class GroupState(object):
         """
         with self.lock:
             self.get_interface_group_state().group_membership_timeout(self)
+        self.router_state.notify_timeout(self.group_ip)
 
     def retransmit_timeout(self):
         """

@@ -48,8 +48,8 @@ class MulticastGroupNotifier:
     def notify_membership(self, has_members):
         print(has_members)
 
-notifier = MulticastGroupNotifier()
-multicast_group_obj.add_multicast_routing_entry(notifier)
+group_notifier = MulticastGroupNotifier()
+multicast_group_obj.add_multicast_routing_entry(group_notifier)
 
 # when there is a change of multicast interest (for example group ff05::10:11:12
 # gets interested receivers), the object associated to this object is notified
@@ -57,7 +57,28 @@ multicast_group_obj.add_multicast_routing_entry(notifier)
 
 # if you no longer want to monitor the interest of ff05::10:11:12, remove the
 # notifier from the group
-multicast_group_obj.remove_multicast_routing_entry(notifier)
+multicast_group_obj.remove_multicast_routing_entry(group_notifier)
+
+# get notified of interest informations on this interface
+class MulticastRouterNotifier:
+    def notify_done(self, packet):
+        print('%s leaved group %s' % (packet.ip_header.ip_src, packet.ip_header.ip_dst))
+
+    def notify_report(self, packet):
+        print('%s joined group %s' % (packet.ip_header.ip_src, packet.ip_header.ip_dst)) 
+
+    def notify_removal(self):
+        print('the interface is no longer managed')
+
+    def notify_timeout(self, group_ip):
+        print('membership timeout for group ' + group_ip)
+
+router_notifier = MulticastRouterNotifier()
+intf.interface_state.add_to_notify_entry(router_notifier)
+
+# if you no longer want to monitor the interest this interface, remove the
+# notifier from it
+intf.interface_state.remove_to_notify_entry(router_notifier)
 
 intf.remove()  # stop receiving MLD packets
 ```
